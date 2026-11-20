@@ -394,6 +394,35 @@ namespace Snap2HTML
 			}
 		}
 
+        private static string GetDefaultPageTitle(string path)
+        {
+            string fallback = "Snapshot of " + path;
+            string driveLetter = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (driveLetter.Length != 2 || driveLetter[1] != ':' || !char.IsLetter(driveLetter[0]))
+            {
+                return fallback;
+            }
+
+            try
+            {
+                var drive = new DriveInfo(driveLetter);
+                long total = drive.TotalSize;
+                long used = total - drive.TotalFreeSpace;
+                string label = drive.VolumeLabel;
+                string name = string.IsNullOrWhiteSpace(label) ? driveLetter : label;
+                const double bytesPerGB = 1024d * 1024 * 1024;
+                return $"{name} - {used / bytesPerGB:0.##} GB of {total / bytesPerGB:0.##} GB";
+            }
+            catch (IOException)
+            {
+                return fallback;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return fallback;
+            }
+        }
+
 		// Sets the root path input box and makes related gui parts ready to use
 		private void SetRootPath( string path, bool pathIsValid = true )
 		{
@@ -405,7 +434,7 @@ namespace Snap2HTML
 				if( initDone )
 				{
 					txtLinkRoot.Text = Utils.PathToFileUri(path);
-					txtTitle.Text = "Snapshot of " + path;
+					txtTitle.Text = GetDefaultPageTitle(path);
 				}
 			}
 			else
